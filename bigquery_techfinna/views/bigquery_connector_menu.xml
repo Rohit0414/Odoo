@@ -1,0 +1,14 @@
+<!-- bigquery_connector_menu.xml -->
+<odoo>
+    <record id="action_bigquery_export_wizard" model="ir.actions.act_window">
+        <field name="name">BigQuery Export</field>
+        <field name="res_model">bigquery.techfinna.export</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_bigquery_export"
+              name="BigQuery Export"
+              parent="base.menu_administration"
+              action="action_bigquery_export_wizard"/>
+</odoo>

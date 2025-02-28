@@ -1,0 +1,22 @@
+<!-- views/bigquery_export_wizard_view.xml -->
+<odoo>
+    <record id="view_bigquery_export_wizard_form" model="ir.ui.view">
+        <field name="name">bigquery.techfinna.export.form</field>
+        <field name="model">bigquery.techfinna.export</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div style="margin: 16px; padding: 16px; border: 1px solid #e8e8e8; border-radius: 8px; background-color: #f9f9f9;">
+                        <group>
+                            <field name="table_to_export" style="font-size: 16px; !important; color:black;"/>
+                        </group>
+                        <footer style="margin-top: 16px; text-align: center;">
+                            <button string="Export Data" type="object" name="action_export_data" class="btn-primary" style="font-size: 16px; padding: 8px 16px; border-radius: 4px; background-color: #875A7B; color: white;"/>
+                            <button string="Cancel" class="btn-secondary" special="cancel" style="font-size: 16px; padding: 8px 16px; margin-left: 8px; border-radius: 4px;"/>
+                        </footer>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

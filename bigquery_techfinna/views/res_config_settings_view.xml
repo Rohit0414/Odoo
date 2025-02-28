@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_bigquery" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.bigquery_connector</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="10"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app  data-string="Google BigQuery Connector" string="GOOGLE BIGQUERY CONNECTOR" name="bigquery_connector" logo='bigquery_techfinna/static/description/icon.png'>
+                    <div style="background:#e6e6e6; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                        <span class="fs-2 fw-bold mx-6" style="color: #7c7bad;"><b>GOOGLE BIGQUERY CONNECTOR</b></span>
+                        <div style="background:#f8f8f8; border-radius: 8px; padding: 10px;">
+                            <div style="margin-bottom: 20px;">
+                                <span style="font-size: 1em; color: #333;">
+                                    <b>Note:</b> Ensure to click the <b>"SAVE"</b> button after configuration.
+                                </span>
+                            </div>
+
+                            <group class="pt-4">
+                                <div class="row mt10 o_settings_container">
+                                    <label for="bigquery_project_id" string="BigQuery Project ID" class="col-lg-3 o_light_label" style="padding-top: 8px; color: #7c7bad;"/>
+                                    <div class="col-lg-9" style="margin-left: 15px;">
+                                        <field style="width:450px !important;" name="bigquery_project_id" class="o_input"/>
+                                    </div>
+                                </div>
+                            </group>
+
+                            <group>
+                                <div class="row mt10 o_settings_container">
+                                    <label for="bigquery_dataset_id" string="BigQuery Dataset ID" class="col-lg-3 o_light_label" style="padding-top: 8px; color: #7c7bad;"/>
+                                    <div class="col-lg-9" style="margin-left: 15px;">
+                                        <field style="width:450px !important;" name="bigquery_dataset_id" class="o_input"/>
+                                    </div>
+                                </div>
+                            </group>
+
+                            <group>
+                                <div class="row mt10 o_settings_container">
+                                    <label for="bigquery_credentials_json" string="BigQuery Credentials JSON" class="col-lg-3 o_light_label" style="padding-top: 8px; color: #7c7bad;"/>
+                                    <div class="col-lg-9" style="margin-left: 15px;">
+                                        <field name="bigquery_credentials_json" widget="text" class="o_input" 
+                                            style="padding: 4px; height: 100px; width: 70vw; overflow-y: auto;"/>
+                                    </div>
+                                </div>
+                            </group>
+
+
+                            <div style="margin-top: 20px; background-color: #f4f4f9; padding: 10px; border-radius: 5px; color: #6c757d;">
+                                <span style="font-size: 1em;">
+                                    Bringing <b>unique Odoo solutions</b> to life, TechFinna specializes in <b>Odoo integrations</b> (especially for analytics), creating <b>dynamic Odoo dashboards</b> (Looker, Power BI), and developing <b>React.js based UI apps</b> as Odoo modules. If you have specific requirements or need expert guidance, contact us at <a href="mailto:info@techfinna.com">info@techfinna.com</a> or visit <a href="https://techfinna.com" target="_blank" style="color: #0056b3; text-decoration: underline;">our website</a>.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- New Section for Export to BigQuery
+                    <div style="background:#e6e6e6; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                        <span class="fs-2 fw-bold mx-6" style="color: #7c7bad;">Energize Your Data: Export to BigQuery</span>
+                        <div style="background:#f8f8f8; border-radius: 8px; padding: 10px;">
+                            <div class="row mt10 o_settings_container">
+                                <label for="table_to_export" string="Choose a Table:" class="col-lg-3 o_light_label"/>
+                                <div class="col-lg-9">
+                                    <field name="table_to_export" widget="selection" options="{'no_create': True}"/>
+                                </div>
+                            </div>
+                            <div class="row mt16">
+                                <button name="action_export_data_to_bigquery" type="object" string="Launch Data Journey" class="oe_highlight"/>
+                            </div>
+                        </div>
+                    </div> -->
+                </app>
+                 
+            </xpath>
+        </field>
+    </record>
+</odoo>

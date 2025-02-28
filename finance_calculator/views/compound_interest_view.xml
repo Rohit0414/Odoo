@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_compound_interest_form" model="ir.ui.view">
+        <field name="name">compound.interest.form</field>
+        <field name="model">finance.compound.interest</field>
+        <field name="arch" type="xml">
+            <form string="Compound Interest Calculator">
+                <sheet>
+                    <group>
+                        <field name="principal"/>
+                        <field name="rate"/>
+                        <field name="years"/>
+                        <field name="times_compounded"/>
+                        <field name="maturity_amount" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_compound_interest_tree" model="ir.ui.view">
+        <field name="name">compound.interest.list</field>
+        <field name="model">finance.compound.interest</field>
+        <field name="arch" type="xml">
+            <list string="Compound Interest Calculator">
+                <field name="principal"/>
+                <field name="rate"/>
+                <field name="years"/>
+                <field name="maturity_amount"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_compound_interest" model="ir.actions.act_window">
+    <field name="name">Compound Interest Calculator</field>
+    <field name="res_model">finance.compound.interest</field>
+    <field name="view_mode">list,form</field>
+    <field name="help" type="html">
+        <p class="o_view_nocontent_sm">Create a new Compound Interest Calculator record.</p>
+    </field>
+  </record>
+
+    <menuitem id="menu_compound_interest" name="Compound Interest Calculator"
+        parent="menu_finance_root" action="action_compound_interest"/>
+</odoo>

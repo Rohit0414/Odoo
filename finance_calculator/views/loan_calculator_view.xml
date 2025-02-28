@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_loan_calculator_form" model="ir.ui.view">
+        <field name="name">loan.calculator.form</field>
+        <field name="model">finance.loan_calculator</field>
+        <field name="arch" type="xml">
+            <form string="Loan EMI Calculator">
+                <sheet>
+                    <group>
+                        <field name="loan_amount"/>
+                        <field name="interest_rate"/>
+                        <field name="tenure_years"/>
+                        <field name="emi" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_loan_calculator_tree" model="ir.ui.view">
+        <field name="name">loan.calculator.list</field>
+        <field name="model">finance.loan_calculator</field>
+        <field name="arch" type="xml">
+            <list string="Loan EMI Calculator">
+                <field name="loan_amount"/>
+                <field name="interest_rate"/>
+                <field name="tenure_years"/>
+                <field name="emi"/>
+            </list>
+        </field>
+    </record>
+
+   
+    <!-- Define the Action First -->
+    <record id="action_loan_calculator" model="ir.actions.act_window">
+        <field name="name">Loan EMI Calculator</field>
+        <field name="res_model">finance.loan_calculator</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Define the Menu -->
+    <menuitem id="menu_finance_root" name="Financial Calculators" sequence="10"/>
+    <menuitem id="menu_loan_calculator" name="Loan EMI Calculator"
+        parent="menu_finance_root" action="finance_calculator.action_loan_calculator"/>
+
+
+</odoo>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<!-- Tree View Definition -->
+	<record id="tree_real_estate_root" model="ir.ui.view">
+    <field name="name">real.estate.property.view.list</field>
+    <field name="model">real.estate.property</field>
+    <field name="type">list</field>
+    <field name="priority">1</field>
+    <field name="arch" type="xml">
+        <list string="Property">
+            <field name="name"/>
+            <!-- Add more fields here if needed -->
+        </list>
+    </field>
+</record>
+
+	<!-- Form View Definition -->
+	<record id="form_real_estate_root" model="ir.ui.view">
+    <field name="name">real.estate.property.view.form</field>
+    <field name="model">real.estate.property</field>
+    <field name="type">form</field>
+    <field name="arch" type="xml">
+        <form string="Property">
+            <sheet>
+                <group>
+                    <!-- Your form fields here -->
+                    <field name="name"/>
+                </group>
+            </sheet>
+        </form>
+    </field>
+</record>
+
+<!-- Action Definition -->
+<record id="action_real_estate_root" model="ir.actions.act_window">
+    <field name="name">Real Estate</field>
+    <field name="res_model">real.estate.property</field>
+	<field name="view_mode">list,form</field>
+	<field name="help" type="html">
+			<p class="o_view_nocontent_smiling_face">
+				Add a new Real Estate Property
+			</p>
+		</field>
+    <!-- other fields -->
+</record>
+	
+</odoo>

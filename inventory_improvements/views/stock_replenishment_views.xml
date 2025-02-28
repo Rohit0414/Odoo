@@ -1,0 +1,54 @@
+<odoo>
+    <!-- Form View for Replenishment Rule -->
+    <record id="view_stock_replenishment_form" model="ir.ui.view">
+        <field name="name">stock.replenishment.form</field>
+        <field name="model">stock.warehouse.orderpoint</field>
+        <field name="arch" type="xml">
+            <form string="Replenishment Rule">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="product_id" readonly="1"/>
+                            <field name="product_min_qty"/>
+                            <field name="product_max_qty"/>
+                        </group>
+                        <group>
+                            <field name="custom_threshold" 
+                                   string="Custom Threshold"
+                                   help="Enter the custom threshold value for this rule."/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree View for Replenishment Rules -->
+    <record id="view_stock_replenishment_tree" model="ir.ui.view">
+        <field name="name">stock.replenishment.list</field>
+        <field name="model">stock.warehouse.orderpoint</field>
+        <field name="arch" type="xml">
+            <tree string="Replenishment Rules">
+                <field name="product_id"/>
+                <field name="product_min_qty"/>
+                <field name="product_max_qty"/>
+                <field name="custom_threshold" string="Custom Threshold"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action to Open Replenishment Rules -->
+    <record id="action_stock_replenishment" model="ir.actions.act_window">
+        <field name="name">Replenishment Rules</field>
+        <field name="res_model">stock.warehouse.orderpoint</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Menu Items to Access the Replenishment Rules -->
+    <menuitem id="menu_stock_replenishment_root" name="Replenishment" sequence="10"/>
+    <menuitem id="menu_stock_replenishment" 
+              name="Rules" 
+              parent="menu_stock_replenishment_root"
+              action="action_stock_replenishment" 
+              sequence="10"/>
+</odoo>

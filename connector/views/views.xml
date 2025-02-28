@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <record id="connector_module_view_tree" model="ir.ui.view">
+        <field name="name">connector.module.view.list</field>
+        <field name="model">connector.module</field>
+        <field name="arch" type="xml">
+            <list string="Connector Module">
+                <field name="name"/>
+                <field name="description"/>
+                <field name="date_time"/>
+                <field name="quantity"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="connector_module_view_form" model="ir.ui.view">
+        <field name="name">connector.module.view.form</field>
+        <field name="model">connector.module</field>
+        <field name="arch" type="xml">
+            <form string="Connector Module Form">
+                <sheet>
+                    <group>
+                          <field name="name"/>
+                          <field name="description"/>
+                          <field name="date_time"/>
+                          <field name="quantity"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="connector_module_action" model="ir.actions.act_window">
+        <field name="name">Jarvis</field>
+        <field name="res_model">connector.module</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p>This is a sample help text.</p>
+        </field>
+    </record>
+
+    <menuitem
+        id="connector_module_root_menu"
+        name="Data"
+        sequence="10"/>
+
+    <menuitem
+        id="connector_module_menu"
+        name="Data Module"
+        action="connector_module_action"
+        parent="connector_module_root_menu"
+        sequence="10"/>
+
+  </data>
+</odoo>

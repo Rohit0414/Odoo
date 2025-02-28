@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_student_management_user,access.student.management.user,model_student_management,base.group_user,1,1,1,1
+access_student_performance_user,access.student.performance.user,model_student_performance,base.group_user,1,1,1,1
+access_student_attendance_user,access.student.attendance.user,model_student_attendance,base.group_user,1,1,1,1
+access_student_schedule_user,access.student.schedule.user,model_student_schedule,base.group_user,1,1,1,1

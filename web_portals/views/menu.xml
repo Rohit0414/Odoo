@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem
+        id="web_portals_root_menu"
+        name="Web Portals"
+        sequence="10"/>
+
+    <menuitem
+        id="web_portals_menu"
+        name="Websites"
+        action="web_portals_action"
+        parent="web_portals_root_menu"
+        sequence="10"/>    
+
+</odoo>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="web_portals_view_tree" model="ir.ui.view">
+        <field name="name">web.portals.view.list</field>
+        <field name="model">web.portals</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <tree string="">
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="web_portals_view_form" model="ir.ui.view">
+        <field name="name">web.portals.view.form</field>
+        <field name="model">web.portals</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <tree string="">
+                <field name="name"/>
+                <field name="Description"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="web_portals_action" model="ir.actions.act_window">
+        <field name="name">Web Portals</field>
+        <field name="res_model">web.portals</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+             <p class="o_view_nocontent_smiling_face">
+                Gateways to a range of services or resources (often requiring login) and provide a variety of information in one place.
+            </p>
+        </field>
+    </record>
+</odoo>

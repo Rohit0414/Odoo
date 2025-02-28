@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+ <!-- Main Menu -->
+    <menuitem
+        id="pm_main_menu"
+        name="Project Management"
+        sequence="10"/>
+
+<!-- Project Menu -->
+    <menuitem
+        id="pm_project_menu"
+        name="Projects"
+        parent="pm_main_menu"
+        sequence="10"/>
+
+ <!-- Task Menu -->
+    <menuitem
+        id="pm_task_menu"
+        name="Tasks"
+        parent="pm_main_menu"
+        sequence="10"/>    
+
+
+</odoo>

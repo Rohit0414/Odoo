@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+     <menuitem id="product_bundling_root_menu" name="Product Bundling" sequence="10"/>
+    <menuitem id="product_bundling_menu" name="Product Bundles" parent="product_bundling_root_menu" action="product_bundling_action" sequence="10"/>
+
+
+</odoo>

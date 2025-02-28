@@ -1,0 +1,45 @@
+<odoo>
+    <!-- Form View for Schedule -->
+    <record id="view_student_schedule_form" model="ir.ui.view">
+        <field name="name">student.schedule.form</field>
+        <field name="model">student.schedule</field>
+        <field name="arch" type="xml">
+            <form string="Student Schedule">
+                <sheet>
+                    <group>
+                        <field name="student_id"/>
+                        <field name="class_date"/>
+                        <field name="start_time"/>
+                        <field name="end_time"/>
+                        <field name="subject"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree View for Schedule -->
+    <record id="view_student_schedule_tree" model="ir.ui.view">
+        <field name="name">student.schedule.list</field>
+        <field name="model">student.schedule</field>
+        <field name="arch" type="xml">
+            <list string="Student Schedule">
+                <field name="student_id"/>
+                <field name="class_date"/>
+                <field name="start_time"/>
+                <field name="end_time"/>
+                <field name="subject"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action to Display Schedule -->
+    <record id="action_student_schedule" model="ir.actions.act_window">
+        <field name="name">Student Schedule</field>
+        <field name="res_model">student.schedule</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_student_schedule" name="Schedule" action="action_student_schedule" parent="menu_student_management_root" sequence="40"/>
+</odoo>

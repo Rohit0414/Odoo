@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_retirement_planner_form" model="ir.ui.view">
+        <field name="name">retirement.planner.form</field>
+        <field name="model">finance.retirement_planner</field>
+        <field name="arch" type="xml">
+            <form string="Retirement Planner">
+                <sheet>
+                    <group>
+                        <field name="current_savings"/>
+                        <field name="annual_contribution"/>
+                        <field name="years_to_retirement"/>
+                        <field name="expected_return"/>
+                        <field name="final_savings" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_retirement_planner_tree" model="ir.ui.view">
+        <field name="name">retirement.planner.list</field>
+        <field name="model">finance.retirement_planner</field>
+        <field name="arch" type="xml">
+            <list string="Retirement Planner">
+                <field name="current_savings"/>
+                <field name="annual_contribution"/>
+                <field name="years_to_retirement"/>
+                <field name="final_savings"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_retirement_planner" model="ir.actions.act_window">
+        <field name="name">Retirement Planner</field>
+        <field name="res_model">finance.retirement_planner</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_retirement_planner" name="Retirement Planner"
+        parent="menu_finance_root" action="action_retirement_planner"/>
+</odoo>

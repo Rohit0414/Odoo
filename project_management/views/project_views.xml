@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree View for Projects -->
+   <record id="view_pm_project_tree" model="ir.ui.view">
+    <field name="name">pm.project.list</field>
+    <field name="model">pm.project</field>
+    <field name="type">list</field>
+    <field name="arch" type="xml">
+       <list __validate__="1">
+           <field name="name"/>
+           <field name="start_date"/>
+           <field name="end_date"/>
+       </list>
+
+    </field>
+  </record>
+
+
+    <!-- Form View for Projects -->
+   <record id="view_pm_project_form" model="ir.ui.view">
+    <field name="name">pm.project.form</field>
+    <field name="model">pm.project</field>
+    <field name="type">form</field>
+    <field name="arch" type="xml">
+        <form>
+            <sheet>
+                <group>
+                    <field name="name"/>
+                    <field name="start_date"/>
+                    <field name="end_date"/>
+                </group>
+                <group>
+                    <field name="description"/>
+                </group>
+                <notebook>
+                    <page string="Tasks">
+                        <field name="task_ids" mode="list,form"/>
+                    </page>
+                </notebook>
+            </sheet>
+        </form>
+    </field>
+ </record>
+
+
+    <!-- Action for Projects -->
+    <record id="action_pm_projects" model="ir.actions.act_window">
+        <field name="name">Projects</field>
+        <field name="res_model">pm.project</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Link menu to action -->
+  <record id="menu_action_pm_projects" model="ir.ui.menu">
+    <field name="name">Projects Action</field>
+    <field name="action" ref="action_pm_projects"/>
+    <field name="parent_id" ref="pm_project_menu"/>
+ </record>
+
+</odoo>

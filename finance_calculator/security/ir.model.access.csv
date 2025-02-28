@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_loan_calculator,access.loan_calculator,model_finance_loan_calculator,,1,1,1,1
+access_compound_interest,access.compound_interest,model_finance_compound_interest,,1,1,1,1
+access_inflation_calculator,access.inflation_calculator,model_finance_inflation_calculator,,1,1,1,1
+access_retirement_planner,access.retirement_planner,model_finance_retirement_planner,,1,1,1,1

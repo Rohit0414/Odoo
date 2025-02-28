@@ -1,0 +1,29 @@
+<odoo>
+    <menuitem id="menu_bigquery_queries" name="BigQuery Queries"
+              parent="base.menu_administration" sequence="10"/>
+
+    <record id="view_bigquery_query_tree" model="ir.ui.view">
+        <field name="name">bigquery.techfinna.query.list</field>
+        <field name="model">bigquery.techfinna.query</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="table_name"/>
+                <field name="selected_columns"/>
+                <field name="condition_column"/>
+                <field name="condition_value"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_bigquery_query" model="ir.actions.act_window">
+        <field name="name">BigQuery Queries</field>
+        <field name="res_model">bigquery.techfinna.query</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_bigquery_query_list"
+              name="Manage Queries"
+              parent="menu_bigquery_queries"
+              action="action_bigquery_query"/>
+</odoo>

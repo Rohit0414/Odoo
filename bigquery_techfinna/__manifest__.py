@@ -1,16 +1,14 @@
 {
     'name': 'BigQuery Connector | Cloud Data Warehouse for Odoo',
-    'version': '2.1.1',
-    'summary': '',
+    'version': '2.1.2',
+    'summary': 'BigQuery integration with query builder for Odoo',
     'author': 'TechFinna',
     'website': 'https://techfinna.com/odoo-bigquery-connector/',
     'maintainer': 'Techfinna',
     'category': 'Connector',
     'support': "info@techfinna.com",
-    'live_test_url': 'https://youtu.be/fRtjMXTZSwA',
     'license': 'LGPL-3',
     'price': 399,
-    # 'module_type': 'official',
     'currency': 'USD',
     'depends': ['base'],
     'images': ['static/description/banner.gif'],
@@ -19,8 +17,9 @@
         'views/res_config_settings_view.xml',
         'views/bigquery_connector_menu.xml',
         'views/bigquery_export_wizard_view.xml',
+        'views/bigquery_query_menu.xml',   # ✅ NEW Query Menu XML
+        'views/bigquery_query_view.xml',   # ✅ NEW Query Form XML
     ],
-
     'external_dependencies': {
         'python': ['google-cloud-bigquery', 'pandas', 'pyarrow'],
     },

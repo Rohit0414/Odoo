@@ -1,0 +1,23 @@
+<odoo>
+    <record id="view_bigquery_query_form" model="ir.ui.view">
+        <field name="name">bigquery.techfinna.query.form</field>
+        <field name="model">bigquery.techfinna.query</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="table_name"/>
+                        <field name="selected_columns"/>
+                        <field name="condition_column"/>
+                        <field name="condition_value"/>
+                    </group>
+                    <footer>
+                        <button name="run_query" string="Run Query" type="object" class="oe_highlight"/>
+                        <button string="Cancel" class="oe_link" special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

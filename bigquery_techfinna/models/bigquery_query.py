@@ -1,8 +1,6 @@
-from odoo import models, fields, api
-import json
-from google.cloud import bigquery
-from google.oauth2 import service_account
+# bigquery_query.py
 import logging
+from odoo import models, fields, api
 
 _logger = logging.getLogger(__name__)
 
@@ -11,40 +9,59 @@ class BigQueryQuery(models.Model):
     _description = 'BigQuery Query Builder'
 
     name = fields.Char(string="Query Name", required=True)
-    table_name = fields.Selection(selection='_get_table_options', string="Table", required=True)
-    selected_columns = fields.Char(string="Selected Columns")
-    condition_column = fields.Char(string="Condition Column")
-    condition_value = fields.Char(string="Condition")
+    
+    table_name = fields.Selection(
+        selection='_get_table_options',
+        string="Table",
+        required=True
+    )
+
+    column_ids = fields.Many2many(
+        'bigquery.techfinna.column',
+        'bigquery_query_column_rel',
+        'query_id',
+        'column_id',
+        string="Columns"
+    )
+
+    condition_column = fields.Many2one(
+        'bigquery.techfinna.column',
+        string="Condition Column",
+        domain="[('id', 'in', column_ids)]"
+    )
+    condition_value = fields.Char(string="Condition Value")
 
     @api.model
     def _get_table_options(self):
-        """Fetch available tables from BigQuery"""
-        client = self.get_bigquery_client()
-        dataset_id = self.env['ir.config_parameter'].sudo().get_param('bigquery.dataset_id')
-        tables = client.list_tables(dataset_id)
-        return [(table.table_id, table.table_id) for table in tables]
+        self.env.cr.execute("SELECT relname FROM pg_stat_user_tables ORDER BY relname")
+        tables = self.env.cr.fetchall()
+        return [(t[0], t[0]) for t in tables]
 
-    def get_bigquery_client(self):
-        """Authenticate with BigQuery"""
-        ICP = self.env['ir.config_parameter'].sudo()
-        credentials_json = ICP.get_param('bigquery.credentials_json')
-        credentials_info = json.loads(credentials_json)
-        credentials = service_account.Credentials.from_service_account_info(credentials_info)
-        project_id = ICP.get_param('bigquery.project_id')
-        return bigquery.Client(project=project_id, credentials=credentials)
+    @api.onchange('table_name')
+    def _onchange_table_name(self):
+        if self.table_name:
+            self.env.cr.execute("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = %s
+            """, (self.table_name,))
+            columns_data = self.env.cr.fetchall()
+
+            column_ids = []
+            for col_tuple in columns_data:
+                col_name = col_tuple[0]
+                existing = self.env['bigquery.techfinna.column'].search([('name', '=', col_name)], limit=1)
+                if not existing:
+                    existing = self.env['bigquery.techfinna.column'].create({'name': col_name})
+                column_ids.append(existing.id)
+
+            self.column_ids = [(6, 0, column_ids)]
+        else:
+            self.column_ids = [(5, 0, 0)]
 
     def run_query(self):
-        """Execute the query and return results"""
-        client = self.get_bigquery_client()
-        dataset_id = self.env['ir.config_parameter'].sudo().get_param('bigquery.dataset_id')
-        table_id = f"{dataset_id}.{self.table_name}"
-
-        # Construct the SQL query
-        query = f"SELECT {self.selected_columns} FROM `{table_id}`"
-        if self.condition_column and self.condition_value:
-            query += f" WHERE {self.condition_column} = '{self.condition_value}'"
-
-        _logger.info(f"Running BigQuery: {query}")
-        job = client.query(query)
-        result = job.result().to_dataframe()
-        return result.to_dict(orient='records')  # Convert to Odoo-compatible format
+        """Method triggered by the 'Run Query' button in the XML view."""
+        _logger.info("Run Query button clicked for record: %s", self.name)
+        # TODO: Add your logic to run the query
+        # e.g., building a SQL query or calling your BigQuery client
+        return True

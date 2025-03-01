@@ -5,13 +5,16 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
-                    <group>
-                        <field name="name"/>
-                        <field name="table_name"/>
-                        <field name="selected_columns"/>
-                        <field name="condition_column"/>
-                        <field name="condition_value"/>
-                    </group>
+                    <div style="background-color: #f9f9f9; padding: 16px; border-radius: 8px;">
+                        <group>
+                            <field name="name" string="Query Name"/>
+                            <field name="table_name" widget="selection"/>
+                            <!-- Multi-select widget for columns -->
+                            <field name="column_ids" widget="many2many_tags"/>
+                            <field name="condition_column" string="Condition Column"/>
+                            <field name="condition_value" string="Condition Value"/>
+                        </group>
+                    </div>
                     <footer>
                         <button name="run_query" string="Run Query" type="object" class="oe_highlight"/>
                         <button string="Cancel" class="oe_link" special="cancel"/>

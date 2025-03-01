@@ -1,7 +1,4 @@
 <odoo>
-    <menuitem id="menu_bigquery_queries" name="BigQuery Queries"
-              parent="base.menu_administration" sequence="10"/>
-
     <record id="view_bigquery_query_tree" model="ir.ui.view">
         <field name="name">bigquery.techfinna.query.list</field>
         <field name="model">bigquery.techfinna.query</field>
@@ -9,7 +6,8 @@
             <list>
                 <field name="name"/>
                 <field name="table_name"/>
-                <field name="selected_columns"/>
+                <!-- Display columns as comma-separated names -->
+                <field name="column_ids"/>
                 <field name="condition_column"/>
                 <field name="condition_value"/>
             </list>
@@ -22,6 +20,10 @@
         <field name="view_mode">list,form</field>
     </record>
 
+    <menuitem id="menu_bigquery_queries"
+              name="BigQuery Queries"
+              parent="base.menu_administration"
+              sequence="10"/>
     <menuitem id="menu_bigquery_query_list"
               name="Manage Queries"
               parent="menu_bigquery_queries"

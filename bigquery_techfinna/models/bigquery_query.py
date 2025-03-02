@@ -147,16 +147,24 @@ class BigQueryQuery(models.Model):
             _logger.info("No data found for export.")
             return
 
+        
+        
         # Convert fetched data to a pandas DataFrame.
         df = pd.DataFrame(data)
+    
         for col in df.columns:
-            # Convert datetime columns to ISO strings.
+            # For datetime columns: if they are naive, localize them to UTC.
             if pd.api.types.is_datetime64_any_dtype(df[col]):
-                df[col] = df[col].apply(lambda x: x.isoformat() if pd.notnull(x) else None)
+                # Check if the datetime column is timezone-aware; if not, localize it.
+                if df[col].dt.tz is None:
+                    df[col] = df[col].dt.tz_localize('UTC')
             # Convert dictionary or list columns to JSON strings.
             elif df[col].apply(lambda x: isinstance(x, (dict, list))).any():
                 df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else x)
-
+                
+                
+        print(df)
+       
         # Determine BigQuery schema:
         # Use get_schema_bq() if available; otherwise, default to STRING for each column.
         if hasattr(self, 'get_schema_bq'):
@@ -208,6 +216,7 @@ class BigQueryQuery(models.Model):
         insert_columns = ", ".join(selected_columns)
         insert_values = ", ".join([f"S.{col}" for col in selected_columns])
 
+        
         merge_sql = f"""
             MERGE `{target_table_id}` T
             USING `{temp_table_id}` S

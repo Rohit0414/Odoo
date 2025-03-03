@@ -12,6 +12,8 @@
                 <field name="condition_value"/>
                 <!-- Auto Sync field with inline toggle (using a widget if desired) -->
                 <field name="auto_sync" string="Auto Sync" widget="boolean_toggle"/>
+                 <!-- Temporary debug button -->
+                <button name="debug_auto_sync" type="object" string="Debug Auto Sync" class="oe_highlight"/>
                 <button name="run_query" type="object" string="Run" class="oe_highlight"/>
             </list>
         </field>

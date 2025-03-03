@@ -9,6 +9,7 @@
                         <group>
                             <field name="name" string="Query Name"/>
                             <field name="table_name" widget="selection"/>
+                            <field name="auto_sync"/>
                             <!-- Multi-select widget for columns -->
                             <field name="column_ids" widget="many2many_tags"/>
                             <field name="condition_column" string="Condition Column"/>
@@ -16,6 +17,7 @@
                         </group>
                     </div>
                     <footer>
+                        <button name="debug_auto_sync" type="object" string="Debug Auto Sync" class="oe_highlight"/>
                         <button name="run_query" string="Run Query" type="object" class="oe_highlight"/>
                         <button string="Cancel" class="oe_link" special="cancel"/>
                     </footer>

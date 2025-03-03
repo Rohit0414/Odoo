@@ -223,3 +223,9 @@ class BigQueryQuery(models.Model):
                 query.run_query()
             except Exception as e:
                 _logger.error(f"Auto-sync error for query '{query.name}': {e}")
+
+    @api.model
+    def debug_auto_sync(self, *args, **kwargs):
+        _logger.info("DEBUG: debug_auto_sync() called for query: %s", self.name)
+        self.run_query()
+        return True

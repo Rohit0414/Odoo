@@ -10,8 +10,9 @@
                 <field name="column_ids"/>
                 <field name="condition_column"/>
                 <field name="condition_value"/>
-                 <button name="run_query" type="object" string="Run" class="oe_highlight"/>
-           
+                <!-- Auto Sync field with inline toggle (using a widget if desired) -->
+                <field name="auto_sync" string="Auto Sync" widget="boolean_toggle"/>
+                <button name="run_query" type="object" string="Run" class="oe_highlight"/>
             </list>
         </field>
     </record>

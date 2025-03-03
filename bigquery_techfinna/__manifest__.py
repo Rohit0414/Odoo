@@ -14,6 +14,7 @@
     'images': ['static/description/banner.gif'],
     'data': [
         'security/ir.model.access.csv',
+        'data/cron_auto_sync.xml',
         'views/res_config_settings_view.xml',
         'views/bigquery_connector_menu.xml',
         'views/bigquery_export_wizard_view.xml',

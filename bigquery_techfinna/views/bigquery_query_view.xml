@@ -5,7 +5,7 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
-                    <div style="background-color:rgb(141 197 125); padding: 16px; border-radius: 8px;">
+                    <div style="background-color:rgb(211 216 221 / 15%); padding: 16px; border-radius: 8px;">
                         <group>
                             <field name="name" string="Query Name"/>
                             <field name="table_name" widget="selection"/>

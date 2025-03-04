@@ -10,7 +10,7 @@
     'license': 'LGPL-3',
     'price': 399,
     'currency': 'USD',
-    'depends': ['base'],
+    'depends': ['base', 'web'],
     'images': ['static/description/banner.gif'],
     'data': [
         'security/ir.model.access.csv',
@@ -21,6 +21,11 @@
         'views/bigquery_query_menu.xml',   # ✅ NEW Query Menu XML
         'views/bigquery_query_view.xml',   # ✅ NEW Query Form XML
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bigquery_techfinna/static/src/css/hide_search_more.css',
+        ],
+    },
     'external_dependencies': {
         'python': ['google-cloud-bigquery', 'pandas', 'pyarrow'],
     },

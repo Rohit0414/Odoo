@@ -226,6 +226,14 @@ class BigQueryQuery(models.Model):
 
     @api.model
     def debug_auto_sync(self, *args, **kwargs):
-        _logger.info("DEBUG: debug_auto_sync() called for query: %s", self.name)
+        if not self.id:
+            _logger.error("Record is not saved; please save the record first.")
+            return False
+        _logger.info("DEBUG: debug_auto_sync() called for query: %s, table_name: %s", self.name, self.table_name)
+        if not self.table_name:
+            _logger.error("No table selected for export.")
+            return False
         self.run_query()
         return True
+
+

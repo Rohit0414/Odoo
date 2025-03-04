@@ -1,0 +1,8 @@
+/* Hide the search more link in the many2many_tags widget */
+/* .o_field_many2manytags_more,
+.o_field_many2manytags_search_more {
+   
+} */
+.o_field_widget.o_field_many2many_tags .o_field_many2many_selection .o_input{
+    display: none !important;
+}

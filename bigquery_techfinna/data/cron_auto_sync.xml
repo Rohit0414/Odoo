@@ -6,8 +6,8 @@
         <field name="state">code</field>
         <field name="code">model.auto_sync_queries()</field>
         <field name="interval_number">1</field>
-        <field name="interval_type">minutes</field>
-        <field name="nextcall">2025-03-03 19:12:00</field>
+        <field name="interval_type">day</field>
+        <field name="nextcall">2025-03-03 02:00:00</field>
         <field name="active" eval="True"/>
     </record>
 </odoo>

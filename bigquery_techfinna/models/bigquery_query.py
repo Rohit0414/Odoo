@@ -34,7 +34,10 @@ class BigQueryQuery(models.Model):
         string="Condition Column",
         domain="[('id', 'in', column_ids)]"
     )
-    condition_value = fields.Char(string="Condition Value")
+    condition_value = fields.Char(
+        string="Condition Value",
+        help="Enter the condition with an operator (e.g., '!=done', '>=100'). If no operator is specified, '=' is assumed."
+    )
 
     # New field to enable/disable auto-sync
     auto_sync = fields.Boolean(string="Auto Sync", default=False)
@@ -120,8 +123,21 @@ class BigQueryQuery(models.Model):
         base_query = f"SELECT {', '.join(selected_columns)} FROM {self.table_name}"
         params = ()
         if self.condition_column and self.condition_value:
-            base_query += f" WHERE {self.condition_column.name} = %s"
-            params = (self.condition_value,)
+            # Define supported operators (order matters: longer ones first)
+            supported_ops = ['!=', '>=', '<=', '=', '>', '<']
+            condition_str = self.condition_value.strip()
+            operator = '='  # default operator
+
+            # Check if condition_str starts with a supported operator
+            for op in sorted(supported_ops, key=lambda x: -len(x)):
+                if condition_str.startswith(op):
+                    operator = op
+                    condition_str = condition_str[len(op):].strip()
+                    break
+
+            base_query += f" WHERE {self.condition_column.name} {operator} %s"
+            params = (condition_str,)
+        
         self.env.cr.execute(base_query, params)
         data = self.env.cr.dictfetchall()
         if not data:
@@ -235,5 +251,3 @@ class BigQueryQuery(models.Model):
             return False
         self.run_query()
         return True
-
-

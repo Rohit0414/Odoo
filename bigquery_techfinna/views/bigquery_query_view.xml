@@ -12,9 +12,10 @@
                             <!-- Multi-select widget for columns -->
                             <field name="column_ids" widget="many2many_tags" 
                             options="{'no_create': True, 'no_quick_create': True, 'no_create_edit': True}"/>
-                            <field name="condition_column" string="Condition Column"/>
-                            <field name="condition_value" string="Condition Value"/>
                         </group>
+                           <group string="Advanced Domain Filter">
+                                <field name="domain_filter" placeholder="[('state','=','done')]"/>
+                           </group>
                     </div>
                     <footer>
                         <button name="run_query" string="Run Query" type="object" class="oe_highlight"/>

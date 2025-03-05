@@ -6,6 +6,7 @@ from google.cloud import bigquery
 import pandas as pd
 from itertools import groupby
 from google.oauth2 import service_account
+import ast
 
 _logger = logging.getLogger(__name__)
 
@@ -29,15 +30,35 @@ class BigQueryQuery(models.Model):
         string="Columns"
     )
     
-    condition_column = fields.Many2one(
-        'bigquery.techfinna.column',
-        string="Condition Column",
-        domain="[('id', 'in', column_ids)]"
+    domain_filter = fields.Text(
+        string="Domain Filter",
+        help="Enter a valid Odoo domain expression, e.g., [('state','=','done'), ('amount_total','>',1000)]"
     )
-    condition_value = fields.Char(
-        string="Condition Value",
-        help="Enter the condition with an operator (e.g., '!=done', '>=100'). If no operator is specified, '=' is assumed."
-    )
+
+    
+    # condition_column = fields.Many2one(
+    #     'bigquery.techfinna.column',
+    #     string="Condition Column",
+    #     domain="[('id', 'in', column_ids)]"
+    # )
+   
+    # condition_operator = fields.Selection(
+    #     selection=[
+    #         ('=', 'Equals'),
+    #         ('like', 'Contains'),
+    #         ('>', 'Greater Than'),
+    #         ('<', 'Less Than'),
+    #     ],
+    #     string="Operator",
+    #     default='='
+    # )
+    # condition_value = fields.Char(string="Condition Value")
+    
+    # # New field for full filter domain built via the domain widget.
+    # # In the view, use widget="domain" for a user-friendly interface.
+    # filter_domain = fields.Char(string="Filter Domain", 
+    #                             help="Build a filter domain using the search widget. Example: [('state', '=', 'done')]")
+
 
     # New field to enable/disable auto-sync
     auto_sync = fields.Boolean(string="Auto Sync", default=False)
@@ -119,31 +140,34 @@ class BigQueryQuery(models.Model):
         selected_columns = self.column_ids.mapped('name')
         if 'id' not in selected_columns:
             selected_columns = ['id'] + selected_columns
-
+            
         base_query = f"SELECT {', '.join(selected_columns)} FROM {self.table_name}"
-        params = ()
-        if self.condition_column and self.condition_value:
-            # Define supported operators (order matters: longer ones first)
-            supported_ops = ['!=', '>=', '<=', '=', '>', '<']
-            condition_str = self.condition_value.strip()
-            operator = '='  # default operator
-
-            # Check if condition_str starts with a supported operator
-            for op in sorted(supported_ops, key=lambda x: -len(x)):
-                if condition_str.startswith(op):
-                    operator = op
-                    condition_str = condition_str[len(op):].strip()
-                    break
-
-            base_query += f" WHERE {self.condition_column.name} {operator} %s"
-            params = (condition_str,)
+        params = []
+        if self.domain_filter:
+            try:
+                domain_expr = ast.literal_eval(self.domain_filter)
+                _logger.info(domain_expr)
+                # Try to get the model from table_name.
+                # If table_name is a valid model, then this works.
+                model = self.env[self.table_name.replace('_','.')]
+                matching_ids = model.search(domain_expr).ids
+                if matching_ids:
+                    clause = "id IN %s"
+                    base_query += " WHERE " + clause
+                    params.append(tuple(matching_ids))
+                else:
+                    _logger.info("No matching records found for the domain filter.")
+                    return
+            except Exception as e:
+                _logger.error(f"Error parsing domain filter: {e}")
+                return
         
-        self.env.cr.execute(base_query, params)
+        self.env.cr.execute(base_query, tuple(params))
         data = self.env.cr.dictfetchall()
         if not data:
-            _logger.info("No data found for export.")
+            _logger.info("No data found for export after applying filters.")
             return
-
+        
         df = pd.DataFrame(data)
     
         datetime_cols = [col for col in df.columns if pd.api.types.is_datetime64_any_dtype(df[col])]

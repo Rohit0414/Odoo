@@ -52,13 +52,9 @@ class BigQueryQuery(models.Model):
     #     string="Operator",
     #     default='='
     # )
-    # condition_value = fields.Char(string="Condition Value")
+   
     
-    # # New field for full filter domain built via the domain widget.
-    # # In the view, use widget="domain" for a user-friendly interface.
-    # filter_domain = fields.Char(string="Filter Domain", 
-    #                             help="Build a filter domain using the search widget. Example: [('state', '=', 'done')]")
-
+  
 
     # New field to enable/disable auto-sync
     auto_sync = fields.Boolean(string="Auto Sync", default=False)
@@ -68,6 +64,7 @@ class BigQueryQuery(models.Model):
         self.env.cr.execute("SELECT relname AS table FROM pg_stat_user_tables ORDER BY relname")
         tables = self.env.cr.fetchall()
         return [(table[0], table[0]) for table in tables]
+    
 
     @api.onchange('table_name')
     def _onchange_table_name(self):
@@ -107,7 +104,7 @@ class BigQueryQuery(models.Model):
         except Exception as e:
             _logger.error(f"Error during export to BigQuery: {str(e)}")
             raise
-        
+         
     def get_bigquery_client(self):
         ICP = self.env['ir.config_parameter'].sudo()
         credentials_json = ICP.get_param('bigquery.credentials_json')

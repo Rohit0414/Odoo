@@ -9,6 +9,7 @@
                 <!-- Display columns as comma-separated names -->
                 <!-- Auto Sync field with inline toggle (using a widget if desired) -->
                 <field name="auto_sync" string="Auto Sync" widget="boolean_toggle"/>
+                <field name="last_sync" string="Last Sync" widget="Datetime"></field>
                  <!-- Temporary debug button -->
                 <button name="run_query" type="object" string="Run" class="oe_highlight"/>
             </list>

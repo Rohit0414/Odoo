@@ -35,29 +35,11 @@ class BigQueryQuery(models.Model):
         help="Enter a valid Odoo domain expression, e.g., [('state','=','done'), ('amount_total','>',1000)]"
     )
 
-    
-    # condition_column = fields.Many2one(
-    #     'bigquery.techfinna.column',
-    #     string="Condition Column",
-    #     domain="[('id', 'in', column_ids)]"
-    # )
-   
-    # condition_operator = fields.Selection(
-    #     selection=[
-    #         ('=', 'Equals'),
-    #         ('like', 'Contains'),
-    #         ('>', 'Greater Than'),
-    #         ('<', 'Less Than'),
-    #     ],
-    #     string="Operator",
-    #     default='='
-    # )
-   
-    
-  
-
     # New field to enable/disable auto-sync
     auto_sync = fields.Boolean(string="Auto Sync", default=False)
+
+    # New field to track last sync timestamp
+    last_sync = fields.Datetime(string="Last Sync Timestamp")
 
     @api.model
     def _get_table_options(self):
@@ -65,7 +47,6 @@ class BigQueryQuery(models.Model):
         tables = self.env.cr.fetchall()
         return [(table[0], table[0]) for table in tables]
     
-
     @api.onchange('table_name')
     def _onchange_table_name(self):
         if self.table_name:
@@ -95,11 +76,8 @@ class BigQueryQuery(models.Model):
             _logger.error("No table selected for export.")
             return
 
-        # Obtain the reference to the BigQuery export model
-        bigquery_exporter = self.env['bigquery.techfinna.query']
-
         try:
-            bigquery_exporter.export_data_to_bigquery(obj=self)
+            self.export_data_to_bigquery(obj=self)
             _logger.info(f"Data export to BigQuery initiated for query: {self.name}")
         except Exception as e:
             _logger.error(f"Error during export to BigQuery: {str(e)}")
@@ -126,8 +104,14 @@ class BigQueryQuery(models.Model):
     def export_data_to_bigquery(self, obj, batch_size=60000):
         """
         Exports data from the selected Odoo table (with selected columns and condition filtering)
-        to a BigQuery table named after self.name. It syncs the target table by inserting new rows,
-        updating changed rows, and deleting rows no longer present in the source.
+        to a BigQuery table named after self.name.
+        
+        Behavior:
+         - Full Sync (first run, when last_sync is not set): exports all records and performs deletions in BigQuery for rows not in source.
+         - Incremental Sync (subsequent runs): queries records with write_date or create_date greater than last_sync
+           and omits the deletion clause in the MERGE operation.
+        
+        After a successful run, the last_sync timestamp is updated.
         """
         self = obj
         client = self.get_bigquery_client()
@@ -137,20 +121,27 @@ class BigQueryQuery(models.Model):
         selected_columns = self.column_ids.mapped('name')
         if 'id' not in selected_columns:
             selected_columns = ['id'] + selected_columns
-            
+
         base_query = f"SELECT {', '.join(selected_columns)} FROM {self.table_name}"
         params = []
+        conditions = []
+
+        # For incremental sync: filter records changed since last_sync.
+        if self.last_sync:
+            conditions.append("(write_date > %s OR create_date > %s)")
+            params.extend([self.last_sync, self.last_sync])
+        
+        _logger.info(self.last_sync)
+        # Process domain_filter if provided
         if self.domain_filter:
             try:
                 domain_expr = ast.literal_eval(self.domain_filter)
-                _logger.info(domain_expr)
-                # Try to get the model from table_name.
-                # If table_name is a valid model, then this works.
+                _logger.info("Domain filter: %s", domain_expr)
+                # Try to get the model from table_name (convert table name to model name format)
                 model = self.env[self.table_name.replace('_','.')]
                 matching_ids = model.search(domain_expr).ids
                 if matching_ids:
-                    clause = "id IN %s"
-                    base_query += " WHERE " + clause
+                    conditions.append("id IN %s")
                     params.append(tuple(matching_ids))
                 else:
                     _logger.info("No matching records found for the domain filter.")
@@ -158,7 +149,11 @@ class BigQueryQuery(models.Model):
             except Exception as e:
                 _logger.error(f"Error parsing domain filter: {e}")
                 return
-        
+
+        if conditions:
+            base_query += " WHERE " + " AND ".join(conditions)
+            
+        _logger.info("Executing query: %s with params: %s", base_query, params)
         self.env.cr.execute(base_query, tuple(params))
         data = self.env.cr.dictfetchall()
         if not data:
@@ -231,6 +226,8 @@ class BigQueryQuery(models.Model):
         insert_columns = ", ".join(selected_columns)
         insert_values = ", ".join([f"S.{col}" for col in selected_columns])
 
+        # Build the MERGE SQL:
+        # For full sync (when last_sync is not set) include deletion clause.
         merge_sql = f"""
             MERGE `{target_table_id}` T
             USING `{temp_table_id}` S
@@ -239,14 +236,24 @@ class BigQueryQuery(models.Model):
               UPDATE SET {set_clause}
             WHEN NOT MATCHED THEN 
               INSERT ({insert_columns}) VALUES ({insert_values})
+        """
+        if not self.last_sync:
+            merge_sql += """
             WHEN NOT MATCHED BY SOURCE THEN 
               DELETE
-        """
+            """
+        else:
+            _logger.info("Incremental sync in effect; deletion clause skipped (deletions are not processed).")
+        
         query_job = client.query(merge_sql)
         query_job.result()
         _logger.info(f"Data sync completed for table {target_table_id}.")
 
         client.delete_table(temp_table_id, not_found_ok=True)
+
+        # Update sync marker after successful sync
+        self.write({'last_sync': fields.Datetime.now()})
+        _logger.info(f"Sync marker updated for query '{self.name}'.")
 
     @api.model
     def auto_sync_queries(self):

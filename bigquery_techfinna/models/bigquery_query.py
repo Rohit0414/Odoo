@@ -38,7 +38,7 @@ class BigQueryQuery(models.Model):
     
     auto_sync = fields.Boolean(string="Auto Sync", default=False)
 
-    # New field to track last sync timestamp
+   
     last_sync = fields.Datetime(string="Last Sync Timestamp")
 
     @api.model

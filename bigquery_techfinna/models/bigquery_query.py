@@ -35,7 +35,7 @@ class BigQueryQuery(models.Model):
         help="Enter a valid Odoo domain expression, e.g., [('state','=','done'), ('amount_total','>',1000)]"
     )
 
-    # New field to enable/disable auto-sync
+    
     auto_sync = fields.Boolean(string="Auto Sync", default=False)
 
     # New field to track last sync timestamp

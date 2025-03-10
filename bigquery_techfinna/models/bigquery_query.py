@@ -82,6 +82,7 @@ class BigQueryQuery(models.Model):
         except Exception as e:
             _logger.error(f"Error during export to BigQuery: {str(e)}")
             raise
+        pass
          
     def get_bigquery_client(self):
         ICP = self.env['ir.config_parameter'].sudo()
@@ -103,42 +104,35 @@ class BigQueryQuery(models.Model):
     @api.model
     def export_data_to_bigquery(self, obj, batch_size=60000):
         """
-        Exports data from the selected Odoo table (with selected columns and condition filtering)
-        to a BigQuery table named after self.name.
-        
-        Behavior:
-         - Full Sync (first run, when last_sync is not set): exports all records and performs deletions in BigQuery for rows not in source.
-         - Incremental Sync (subsequent runs): queries records with write_date or create_date greater than last_sync
-           and omits the deletion clause in the MERGE operation.
-        
-        After a successful run, the last_sync timestamp is updated.
+        Exports data from the selected Odoo table to BigQuery in batches.
+        It loads the data in chunks into a temporary table and then merges it with
+        the target table. For full sync (when last_sync is not set), rows in the
+        target table that are not in the export will be deleted.
         """
         self = obj
         client = self.get_bigquery_client()
         project_id = client.project
-        
+
         # Build the list of columns to export (ensure 'id' is included as primary key)
         selected_columns = self.column_ids.mapped('name')
         if 'id' not in selected_columns:
             selected_columns = ['id'] + selected_columns
 
+        # Build the base query with optional filtering.
         base_query = f"SELECT {', '.join(selected_columns)} FROM {self.table_name}"
         params = []
         conditions = []
 
-        # For incremental sync: filter records changed since last_sync.
+        # Incremental sync: only export records changed since last_sync.
         if self.last_sync:
             conditions.append("(write_date > %s OR create_date > %s)")
             params.extend([self.last_sync, self.last_sync])
-        
-        _logger.info(self.last_sync)
-        # Process domain_filter if provided
+
+        # Process domain_filter if provided.
         if self.domain_filter:
             try:
                 domain_expr = ast.literal_eval(self.domain_filter)
-                _logger.info("Domain filter: %s", domain_expr)
-                # Try to get the model from table_name (convert table name to model name format)
-                model = self.env[self.table_name.replace('_','.')]
+                model = self.env[self.table_name.replace('_', '.')]
                 matching_ids = model.search(domain_expr).ids
                 if matching_ids:
                     conditions.append("id IN %s")
@@ -152,27 +146,10 @@ class BigQueryQuery(models.Model):
 
         if conditions:
             base_query += " WHERE " + " AND ".join(conditions)
-            
-        _logger.info("Executing query: %s with params: %s", base_query, params)
-        self.env.cr.execute(base_query, tuple(params))
-        data = self.env.cr.dictfetchall()
-        if not data:
-            _logger.info("No data found for export after applying filters.")
-            return
-        
-        df = pd.DataFrame(data)
-    
-        datetime_cols = [col for col in df.columns if pd.api.types.is_datetime64_any_dtype(df[col])]
-        for col in datetime_cols:
-            df[col] = df[col].apply(lambda x: x.strftime("%Y-%m-%dT%H:%M:%S.%f") if pd.notnull(x) else None)
-        
-        for col in df.columns:
-            if df[col].apply(lambda x: isinstance(x, (dict, list))).any():
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else x)
-        
-        _logger.info(f"Selected columns: {selected_columns}")
-        _logger.info(f"DataFrame dtypes: {df.dtypes}")
-       
+
+        _logger.info("Base query: %s with params: %s", base_query, params)
+
+        # Prepare BigQuery schema based on DataFrame dtypes.
         def infer_bq_field_type(dtype, col_name):
             if col_name == "id":
                 return "INTEGER"
@@ -187,32 +164,77 @@ class BigQueryQuery(models.Model):
             else:
                 return "STRING"
 
-        schema = [
-            bigquery.SchemaField(col, infer_bq_field_type(df[col].dtype, col))
-            for col in selected_columns
-        ]
-
+        # Retrieve dataset and target table IDs from system parameters.
         ICP = self.env['ir.config_parameter'].sudo()
         dataset_id = ICP.get_param('bigquery.dataset_id')
         if not dataset_id:
             _logger.error("BigQuery dataset ID is not set.")
             raise ValueError("BigQuery dataset ID is not set in the system parameters.")
-        
+
         target_table_id = f"{project_id}.{dataset_id}.{self.name}"
         temp_table_id = f"{project_id}.{dataset_id}._temp_{self.name}"
+
+        # Ensure the temporary table does not exist.
         try:
             client.delete_table(temp_table_id, not_found_ok=True)
         except Exception as e:
             _logger.error(f"Error deleting temporary table {temp_table_id}: {e}")
             raise
 
-        load_job_config = bigquery.LoadJobConfig(
-            schema=schema,
-            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE
-        )
-        load_job = client.load_table_from_dataframe(df, temp_table_id, job_config=load_job_config)
-        load_job.result()
+        offset = 0
+        first_chunk = True
+        total_rows = 0
+        schema = None  # Will be set after processing the first chunk.
 
+        while True:
+            # Append pagination clause.
+            paginated_query = f"{base_query} LIMIT {batch_size} OFFSET {offset}"
+            _logger.info("Executing paginated query: %s", paginated_query)
+            self.env.cr.execute(paginated_query, tuple(params))
+            data_chunk = self.env.cr.dictfetchall()
+            if not data_chunk:
+                break
+
+            df = pd.DataFrame(data_chunk)
+            total_rows += len(df)
+            _logger.info("Fetched %s rows (offset %s)", len(df), offset)
+
+            # Process datetime columns.
+            datetime_cols = [col for col in df.columns if pd.api.types.is_datetime64_any_dtype(df[col])]
+            for col in datetime_cols:
+                df[col] = df[col].apply(lambda x: x.strftime("%Y-%m-%dT%H:%M:%S.%f") if pd.notnull(x) else None)
+
+            # Convert dict or list columns to JSON strings.
+            for col in df.columns:
+                if df[col].apply(lambda x: isinstance(x, (dict, list))).any():
+                    df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else x)
+
+            # Set up schema on the first chunk.
+            if schema is None:
+                schema = [
+                    bigquery.SchemaField(col, infer_bq_field_type(df[col].dtype, col))
+                    for col in selected_columns
+                ]
+
+            # Determine the write disposition: first chunk truncates, others append.
+            write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE if first_chunk else bigquery.WriteDisposition.WRITE_APPEND
+            first_chunk = False
+
+            load_job_config = bigquery.LoadJobConfig(
+                schema=schema,
+                write_disposition=write_disposition
+            )
+
+            _logger.info("Loading chunk into temporary table %s (rows: %s)", temp_table_id, len(df))
+            load_job = client.load_table_from_dataframe(df, temp_table_id, job_config=load_job_config)
+            load_job.result()  # Wait for the job to complete.
+            offset += batch_size
+
+        if total_rows == 0:
+            _logger.info("No data found for export after applying filters.")
+            return
+
+        # Ensure target table exists; create it if not.
         try:
             target_table = client.get_table(target_table_id)
         except NotFound:
@@ -220,62 +242,39 @@ class BigQueryQuery(models.Model):
             target_table = client.create_table(table)
             _logger.info(f"Created new table {target_table_id} in BigQuery.")
 
+        # Build the MERGE SQL.
         on_clause = "T.id = S.id"
         non_key_columns = [col for col in selected_columns if col != 'id']
         set_clause = ", ".join([f"T.{col} = S.{col}" for col in non_key_columns])
         insert_columns = ", ".join(selected_columns)
         insert_values = ", ".join([f"S.{col}" for col in selected_columns])
 
-        # Build the MERGE SQL:
-        # For full sync (when last_sync is not set) include deletion clause.
         merge_sql = f"""
             MERGE `{target_table_id}` T
             USING `{temp_table_id}` S
             ON {on_clause}
             WHEN MATCHED THEN 
-              UPDATE SET {set_clause}
+            UPDATE SET {set_clause}
             WHEN NOT MATCHED THEN 
-              INSERT ({insert_columns}) VALUES ({insert_values})
+            INSERT ({insert_columns}) VALUES ({insert_values})
         """
         if not self.last_sync:
-            merge_sql += """
+            merge_sql += """                        
             WHEN NOT MATCHED BY SOURCE THEN 
-              DELETE
+            DELETE
             """
         else:
             _logger.info("Incremental sync in effect; deletion clause skipped (deletions are not processed).")
-        
+
+        _logger.info("Executing MERGE operation on target table %s", target_table_id)
         query_job = client.query(merge_sql)
         query_job.result()
-        _logger.info(f"Data sync completed for table {target_table_id}.")
+        _logger.info(f"Data sync completed for table {target_table_id} (total rows processed: {total_rows}).")
 
+        # Clean up the temporary table.
         client.delete_table(temp_table_id, not_found_ok=True)
 
-        # Update sync marker after successful sync
+        # Update sync marker after successful sync.
         self.write({'last_sync': fields.Datetime.now()})
         _logger.info(f"Sync marker updated for query '{self.name}'.")
 
-    @api.model
-    def auto_sync_queries(self):
-        """
-        Finds all queries with auto_sync enabled and runs their export.
-        This method is intended to be called from an ir.cron scheduled action.
-        """
-        auto_sync_queries = self.search([('auto_sync', '=', True)])
-        for query in auto_sync_queries:
-            try:
-                query.run_query()
-            except Exception as e:
-                _logger.error(f"Auto-sync error for query '{query.name}': {e}")
-
-    @api.model
-    def debug_auto_sync(self, *args, **kwargs):
-        if not self.id:
-            _logger.error("Record is not saved; please save the record first.")
-            return False
-        _logger.info("DEBUG: debug_auto_sync() called for query: %s, table_name: %s", self.name, self.table_name)
-        if not self.table_name:
-            _logger.error("No table selected for export.")
-            return False
-        self.run_query()
-        return True

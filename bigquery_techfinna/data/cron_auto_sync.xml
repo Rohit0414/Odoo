@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="ir_cron_batch_run_query" model="ir.cron">
-        <field name="name">Batch Run BigQuery Queries</field>
+    <record id="cron_run_query" model="ir.cron">
+        <field name="name">Run BigQuery Queries</field>
         <field name="model_id" ref="model_bigquery_techfinna_query"/>
         <field name="state">code</field>
-        <field name="code">model.run_query_batch()</field>
-        <!-- Schedule this job to run daily; adjust the interval as needed -->
-        <field name="interval_number">1</field>
-        <field name="interval_type">days</field>
+        <field name="code">
+            action = env['bigquery.techfinna.query'].run_query()
+        </field>
+        <field name="interval_number">10</field>
+        <field name="interval_type">minutes</field>
+        <field name="active">True</field>
     </record>
 </odoo>
-

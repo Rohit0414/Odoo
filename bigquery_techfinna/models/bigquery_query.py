@@ -3,8 +3,9 @@ import math
 import json
 import pandas as pd
 import ast
+import sqlalchemy
 
-from odoo import models, fields, api
+from odoo import models, fields, api, tools
 from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
@@ -34,7 +35,7 @@ class BigQueryQuery(models.Model):
     )
     last_sync = fields.Datetime(string="Last Sync Timestamp")
     export_offset = fields.Integer(string="Export Offset", default=0)
-    auto_sync=fields.Boolean(string="Auto Sync")
+    auto_sync = fields.Boolean(string="Auto Sync")
 
     @api.model
     def _get_table_options(self):
@@ -63,9 +64,6 @@ class BigQueryQuery(models.Model):
             self.column_ids = [(5, 0, 0)]
 
     def run_query(self):
-        """
-        Row-level action to export data for the current record to BigQuery.
-        """
         if not self.table_name:
             _logger.error("No table selected for export for record %s.", self.id)
             return
@@ -94,30 +92,7 @@ class BigQueryQuery(models.Model):
         project_id = ICP.get_param('bigquery.project_id')
         return bigquery.Client(project=project_id, credentials=credentials)
 
-    def export_data_to_bigquery(self, batch_size=1):
-        """
-        Exports data from the specified Odoo table to BigQuery in batches.
-        If no records are found, an empty table is created/overwritten in BigQuery.
-        
-        -----------------------------------------------------------------------------
-        Why Some People Use SELECT COUNT(*)
-          - Progress Tracking:
-              If you want to show a progress bar or calculate how many batches you'll have in total,
-              you need the row count so you can compute how many times you'll loop.
-          - Preemptive Stopping/Resource Planning:
-              Sometimes you might want to stop after a certain number of batches or estimate
-              how long the job will run. A row count helps with that.
-          - Validation or Logging:
-              In some cases, it's helpful to log, "We're about to export 10,000 rows,
-              in batches of 500," just for clarity.
-        
-        When You Don't Need It
-          - If you're happy to keep fetching until empty (i.e., the query returns no more rows),
-            and not worry about total batch counts or progress bars,
-            then you can skip the SELECT COUNT(*) step. Your loop will stop automatically
-            when there's no more data to fetch.
-        -----------------------------------------------------------------------------
-        """
+    def export_data_to_bigquery(self, batch_size=10):
         client = self.get_bigquery_client()
         project_id = client.project
         ICP = self.env['ir.config_parameter'].sudo()
@@ -133,10 +108,8 @@ class BigQueryQuery(models.Model):
                 selected_columns = ['id'] + selected_columns
             select_clause = ', '.join(selected_columns)
         else:
-            # If no columns are specified, export all columns.
             select_clause = '*'
 
-        # Build base query using selected columns.
         base_query = f"SELECT {select_clause} FROM {self.table_name}"
         params = []
         conditions = []
@@ -148,7 +121,6 @@ class BigQueryQuery(models.Model):
         if self.domain_filter:
             try:
                 domain_expr = ast.literal_eval(self.domain_filter)
-                # Adjust model name if necessary
                 model_name = self.table_name.replace('_', '.')
                 model = self.env[model_name]
                 matching_ids = model.search(domain_expr).ids
@@ -172,81 +144,53 @@ class BigQueryQuery(models.Model):
         total_records = self.env.cr.fetchone()[0]
         _logger.info("Total records to export: %s", total_records)
 
-        # If no records are found, create an empty table in BigQuery.
         if total_records == 0:
             self._create_empty_table_in_bigquery(client, project_id, dataset_id)
             _logger.info("No records to export. Created/overwrote an empty table in BigQuery.")
             return
 
+        # Create SQLAlchemy engine using Odoo configuration parameters.
+        db_name = self.env.cr.dbname
+        db_user = tools.config.get('dhimanrohit070@gmail.com')
+        db_password = tools.config.get('odoo18', '')
+        db_host = tools.config.get('db_host', 'localhost')
+        db_port = tools.config.get('db_port', '5432')
+        dsn = f"postgresql://{'dhimanrohit070@gmail.com'}:{'odoo18'}@{'localhost'}:{'8018'}/{'odoo'}"
+        engine = sqlalchemy.create_engine(dsn)
+
+        _logger.info("Fetching data using SQLAlchemy engine with chunksize=%s", batch_size)
+        # Use pd.read_sql_query with chunksize; Pandas will internally loop over chunks
+        df = pd.concat(
+            pd.read_sql_query(base_query, engine, params=tuple(params), chunksize=batch_size)
+        )
+        rows_fetched = len(df)
+        _logger.info("Fetched %s rows by concatenating chunks.", rows_fetched)
+
+        self._transform_dataframe(df)
+
         target_table_id = f"{project_id}.{dataset_id}.{self.name}"
+        load_job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
+        _logger.info("Loading data into %s (rows: %s)", target_table_id, rows_fetched)
+        load_job = client.load_table_from_dataframe(df, target_table_id, job_config=load_job_config)
+        load_job.result()
 
-        # Process records in batches.
-        offset = self.export_offset or 0
-        total_rows_processed = 0
-        batch_index = 0
-        first_chunk = True
-
-        while True:
-            paginated_query = f"{base_query} LIMIT {batch_size} OFFSET {offset}"
-            _logger.info("Executing paginated query: %s", paginated_query)
-            self.env.cr.execute(paginated_query, tuple(params))
-            data_chunk = self.env.cr.dictfetchall()
-
-            if not data_chunk:
-                _logger.info("No more data to export at offset %s.", offset)
-                break
-
-            df = pd.DataFrame(data_chunk)
-            rows_fetched = len(df)
-            total_rows_processed += rows_fetched
-            batch_index += 1
-            _logger.info("Fetched %s rows in batch %s (offset %s)", rows_fetched, batch_index, offset)
-
-            self._transform_dataframe(df)
-
-            # Set write disposition: first batch overwrites, subsequent batches append.
-            if first_chunk:
-                write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
-                first_chunk = False
-            else:
-                write_disposition = bigquery.WriteDisposition.WRITE_APPEND
-
-            load_job_config = bigquery.LoadJobConfig(write_disposition=write_disposition)
-
-            _logger.info("Loading batch %s into %s (rows: %s)", batch_index, target_table_id, rows_fetched)
-            load_job = client.load_table_from_dataframe(df, target_table_id, job_config=load_job_config)
-            load_job.result()
-
-            offset += batch_size
-
-        self.write({'export_offset': offset})
-        _logger.info("Export finished. Processed %s rows total. Table: %s", total_rows_processed, target_table_id)
+        self.write({'export_offset': rows_fetched})
+        _logger.info("Export finished. Processed %s rows total. Table: %s", rows_fetched, target_table_id)
 
     def _transform_dataframe(self, df):
-        """
-        Transforms DataFrame columns for BigQuery.
-          - Converts datetime columns to ISO format.
-          - Converts dictionary or list columns to JSON strings.
-        """
+        # Transform datetime columns to ISO format and convert dicts/lists to JSON strings.
         datetime_cols = [col for col in df.columns if pd.api.types.is_datetime64_any_dtype(df[col])]
         for col in datetime_cols:
             df[col] = df[col].apply(lambda x: x.strftime("%Y-%m-%dT%H:%M:%S.%f") if pd.notnull(x) else None)
-
         for col in df.columns:
             if df[col].apply(lambda x: isinstance(x, (dict, list))).any():
                 df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else x)
 
     def _create_empty_table_in_bigquery(self, client, project_id, dataset_id):
-        """
-        Creates or overwrites the target BigQuery table with an empty table if no records exist.
-        An explicit schema is provided so that even an empty DataFrame can define the table structure.
-        """
         target_table_id = f"{project_id}.{dataset_id}.{self.name}"
-        
-        # Build the schema based on self.column_ids
+        # Build the schema based on self.column_ids.
         selected_columns = self.column_ids.mapped('name')
         if not selected_columns:
-            # If no columns in column_ids, retrieve column names from the table in PostgreSQL.
             self.env.cr.execute("""
                 SELECT column_name
                 FROM information_schema.columns
@@ -254,17 +198,12 @@ class BigQueryQuery(models.Model):
             """, (self.table_name,))
             columns_data = self.env.cr.fetchall()
             selected_columns = [col[0] for col in columns_data]
-        
-        # Ensure 'id' is included
         if 'id' not in selected_columns:
             selected_columns = ['id'] + selected_columns
 
         # Build explicit schema: defaulting all types to STRING (adjust types as needed)
         schema = [bigquery.SchemaField(col, "STRING") for col in selected_columns]
-
-        # Create an empty DataFrame with the proper columns
         empty_df = pd.DataFrame(columns=selected_columns)
-        
         load_job_config = bigquery.LoadJobConfig(
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
             schema=schema

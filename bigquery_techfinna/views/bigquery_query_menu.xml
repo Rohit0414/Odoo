@@ -10,6 +10,7 @@
                 <field name="table_name"/>
                 <field name="auto_sync" string="Auto Sync" widget="boolean_toggle"/>
                 <field name="last_sync" string="Last Sync" widget="Datetime"/>
+                <field name="export_offset" string="Export offset" widget="Integer"/>
                 <button name="run_query" type="object" string="Run" class="oe_highlight"/>
             </list>
         </field>

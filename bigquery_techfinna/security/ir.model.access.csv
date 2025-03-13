@@ -1,4 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_bigquery_techfinna_export,bigquery.techfinna.export,model_bigquery_techfinna_export,,1,1,1,1
-access_bigquery_query_user,bigquery.query.user,model_bigquery_techfinna_query,base.group_user,1,1,1,1
-access_bigquery_column_user,bigquery.column.user,model_bigquery_techfinna_column,base.group_user,1,1,1,1
